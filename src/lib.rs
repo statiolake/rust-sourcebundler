@@ -106,14 +106,14 @@ impl<'a> Bundler<'a> {
         let lib_fd = File::open(self.librs_filename).expect("could not open lib.rs");
         let mut lib_reader = BufReader::new(&lib_fd);
 
-        let mod_re = Regex::new(r"^\s*pub mod (.+);$").unwrap();
+        let mod_re = Regex::new(r"^\s*(pub )?mod (?P<m>.+);$").unwrap();
 
         let mut line = String::new();
         while lib_reader.read_line(&mut line).unwrap() > 0 {
             line.pop();
             if self.comment_re.is_match(&line) || self.warn_re.is_match(&line) {
             } else if let Some(cap) = mod_re.captures(&line) {
-                let modname = cap.get(1).unwrap().as_str();
+                let modname = cap.name("m").unwrap().as_str();
                 if modname != "tests" {
                     self.usemod(o, modname, modname, modname)?;
                 }
@@ -149,7 +149,7 @@ impl<'a> Bundler<'a> {
         assert!(mod_fd.is_some(), "could not find file for module");
         let mut mod_reader = BufReader::new(mod_fd.unwrap().unwrap());
 
-        let mod_re = Regex::new(r"^\s*pub mod (.+);$").unwrap();
+        let mod_re = Regex::new(r"^\s*(pub )?mod (?P<m>.+);$").unwrap();
 
         let mut line = String::new();
 
@@ -160,7 +160,7 @@ impl<'a> Bundler<'a> {
             line.pop();
             if self.comment_re.is_match(&line) || self.warn_re.is_match(&line) {
             } else if let Some(cap) = mod_re.captures(&line) {
-                let submodname = cap.get(1).unwrap().as_str();
+                let submodname = cap.name("m").unwrap().as_str();
                 if submodname != "tests" {
                     let submodfile = format!("{}/{}", mod_path, submodname);
                     let submodimport = format!("{}::{}", mod_import, submodname);
