@@ -10,6 +10,7 @@ use std::io;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
+use std::mem::take;
 use std::path::Path;
 
 extern crate regex;
@@ -84,7 +85,8 @@ impl<'a> Bundler<'a> {
 
         let mut line = String::new();
         while bin_reader.read_line(&mut line).unwrap() > 0 {
-            line.pop();
+            let line = take(&mut line); // take string for next loop
+            let line = line.trim_end();
             if self.comment_re.is_match(&line) || self.warn_re.is_match(&line) {
             } else if extcrate_re.is_match(&line) {
                 self.librs(o)?;
@@ -96,7 +98,6 @@ impl<'a> Bundler<'a> {
             } else {
                 self.write_line(&mut o, &line)?;
             }
-            line.clear();
         }
         Ok(())
     }
@@ -110,7 +111,8 @@ impl<'a> Bundler<'a> {
 
         let mut line = String::new();
         while lib_reader.read_line(&mut line).unwrap() > 0 {
-            line.pop();
+            let line = take(&mut line); // take string for next loop
+            let line = line.trim_end();
             if self.comment_re.is_match(&line) || self.warn_re.is_match(&line) {
             } else if let Some(cap) = mod_re.captures(&line) {
                 let modname = cap.get(1).unwrap().as_str();
@@ -120,7 +122,6 @@ impl<'a> Bundler<'a> {
             } else {
                 self.write_line(&mut o, &line)?;
             }
-            line.clear(); // clear to reuse the buffer
         }
         Ok(())
     }
@@ -157,7 +158,8 @@ impl<'a> Bundler<'a> {
         self.skip_use.insert(String::from(mod_import));
 
         while mod_reader.read_line(&mut line).unwrap() > 0 {
-            line.pop();
+            let line = take(&mut line); // take string for next loop
+            let line = line.trim_end();
             if self.comment_re.is_match(&line) || self.warn_re.is_match(&line) {
             } else if let Some(cap) = mod_re.captures(&line) {
                 let submodname = cap.get(1).unwrap().as_str();
@@ -169,7 +171,6 @@ impl<'a> Bundler<'a> {
             } else {
                 self.write_line(&mut o, &line)?;
             }
-            line.clear(); // clear to reuse the buffer
         }
 
         writeln!(&mut o, "}}")?;
